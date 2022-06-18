@@ -62,3 +62,58 @@ export const delete_user = async (req, res) => {
     res.status(403).json("Access denied. You can only delete your own profile");
   }
 };
+
+// Follow a user
+export const follow_user = async (req, res) => {
+  const id = req.params.id;
+
+  const { current_user_id } = req.body;
+
+  if (current_user_id === id) {
+    res.status(403).json("Action forbidden");
+  } else {
+    try {
+      const follow_user = await UserModel.findById(id);
+      const following_user = await UserModel.findById(current_user_id);
+
+      // If not already following
+      if (!follow_user.followers.includes(current_user_id)) {
+        await follow_user.updateOne({ $push: { followers: current_user_id } });
+        await following_user.updateOne({ $push: { followings: id } });
+        res.status(200).json("User followed");
+      } else {
+        res.status(403).json("You're already following this user");
+      }
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+};
+
+// Unfollow a user
+export const unfollow_user = async (req, res) => {
+  const id = req.params.id;
+
+  const { current_user_id } = req.body;
+
+  if (current_user_id === id) {
+    res.status(403).json("Action forbidden");
+  } else {
+    try {
+      const follow_user = await UserModel.findById(id);
+      const following_user = await UserModel.findById(current_user_id);
+
+      // If not already following
+      if (follow_user.followers.includes(current_user_id)) {
+        await follow_user.updateOne({ $pull: { followers: current_user_id } });
+        await following_user.updateOne({ $pull: { followings: id } });
+        res.status(200).json("User unfollowed");
+      } else {
+        res.status(403).json("You're not following this user");
+      }
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+};
+
